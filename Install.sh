@@ -451,7 +451,7 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
     arch-chroot /mnt sed -i 's/^TIMELINE_MIN_AGE="1800"/TIMELINE_MIN_AGE="1800"/' /etc/snapper/configs/root
     arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_HOURLY="10"/TIMELINE_LIMIT_HOURLY="5"/' /etc/snapper/configs/root
     arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_DAILY="10"/TIMELINE_LIMIT_DAILY="7"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_WEEKLY="0"/TIMELINE_LIMIT_WEEKLY="3"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_WEEKLY="0"/TIMELINE_LIMIT_WEEKLY="0"/' /etc/snapper/configs/root
     arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_MONTHLY="10"/TIMELINE_LIMIT_MONTHLY="0"/' /etc/snapper/configs/root
     arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_YEARLY="10"/TIMELINE_LIMIT_YEARLY="0"/' /etc/snapper/configs/root
 
@@ -509,7 +509,7 @@ EOF
     print_color "32" "Snapper setup complete with Arch Wiki recommended configuration:"
     print_color "33" "- 7 hourly snapshots"
     print_color "33" "- 5 daily snapshots"
-    print_color "33" "- 3 weekly snapshots"
+    print_color "33" "- 0 weekly snapshots"
     print_color "33" "- 0 monthly snapshots"
     print_color "33" "- 0 yearly snapshots"
     print_color "33" "- Maximum of 15 snapshots for number cleanup"
