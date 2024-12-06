@@ -413,7 +413,21 @@ arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 # Move the zram setup implementation here (after base system installation)
 if [[ $setup_zram =~ ^[Yy]$ ]]; then
     print_color "32" "Setting up zram for swap..."
-    arch-chroot /mnt pacman -S --noconfirm zram-generator
+    print_color "33" "Debug: Checking mounts..."
+    mount | grep /mnt
+    print_color "33" "Debug: Testing chroot..."
+    if arch-chroot /mnt pwd; then
+        print_color "32" "Chroot environment is accessible"
+    else
+        print_color "31" "Cannot access chroot environment"
+        exit 1
+    fi
+    
+    # Install zram-generator with error checking
+    if ! arch-chroot /mnt pacman -S --noconfirm zram-generator; then
+        print_color "31" "Failed to install zram-generator. Check if chroot environment is properly set up."
+        exit 1
+    fi
 
     # Configure zram with user-specified size
     echo "[zram0]" | arch-chroot /mnt tee /etc/systemd/zram-generator.conf > /dev/null
@@ -449,14 +463,14 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
 
     # Modify default snapper configuration according to Arch Wiki
     arch-chroot /mnt sed -i 's/^TIMELINE_MIN_AGE="1800"/TIMELINE_MIN_AGE="1800"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_HOURLY="10"/TIMELINE_LIMIT_HOURLY="5"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_DAILY="10"/TIMELINE_LIMIT_DAILY="7"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_WEEKLY="0"/TIMELINE_LIMIT_WEEKLY="0"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_MONTHLY="10"/TIMELINE_LIMIT_MONTHLY="0"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_YEARLY="10"/TIMELINE_LIMIT_YEARLY="0"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_HOURLY="10"/TIMELINE_LIMIT_HOURLY="10"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_DAILY="10"/TIMELINE_LIMIT_DAILY="5"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_WEEKLY="0"/TIMELINE_LIMIT_WEEKLY="3"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_MONTHLY="10"/TIMELINE_LIMIT_MONTHLY="2"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_YEARLY="10"/TIMELINE_LIMIT_YEARLY="2"/' /etc/snapper/configs/root
 
     # Set up snapshot cleanup
-    arch-chroot /mnt sed -i 's/^NUMBER_LIMIT="50"/NUMBER_LIMIT="15"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^NUMBER_LIMIT="50"/NUMBER_LIMIT="10"/' /etc/snapper/configs/root
     arch-chroot /mnt sed -i 's/^NUMBER_MIN_AGE="1800"/NUMBER_MIN_AGE="1800"/' /etc/snapper/configs/root
 
     # Set ALLOW_USERS and ALLOW_GROUPS in snapper config
@@ -507,12 +521,12 @@ EOF
     arch-chroot /mnt snapper -c root create -d "Initial snapshot"
 
     print_color "32" "Snapper setup complete with Arch Wiki recommended configuration:"
-    print_color "33" "- 7 hourly snapshots"
+    print_color "33" "- 10 hourly snapshots"
     print_color "33" "- 5 daily snapshots"
-    print_color "33" "- 0 weekly snapshots"
-    print_color "33" "- 0 monthly snapshots"
-    print_color "33" "- 0 yearly snapshots"
-    print_color "33" "- Maximum of 15 snapshots for number cleanup"
+    print_color "33" "- 3 weekly snapshots"
+    print_color "33" "- 2 monthly snapshots"
+    print_color "33" "- 2 yearly snapshots"
+    print_color "33" "- Maximum of 10 snapshots for number cleanup"
     print_color "33" "- Automatic snapshots before package operations"
     print_color "33" "- Boot backup before kernel updates"
     print_color "33" "- Initial snapshot created"
