@@ -452,7 +452,7 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
     print_color "32" "Setting up Snapper for BTRFS snapshots..."
     
     # Install necessary packages including GUI tools
-    arch-chroot /mnt pacman -S --noconfirm snapper snap-pac grub-btrfs snapper-gui btrfs-assistant
+    arch-chroot /mnt pacman -S --noconfirm snapper snap-pac grub-btrfs
 
     # Create snapper config for root
     arch-chroot /mnt snapper -c root create-config /
@@ -463,11 +463,11 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
 
     # Modify default snapper configuration according to Arch Wiki
     arch-chroot /mnt sed -i 's/^TIMELINE_MIN_AGE="1800"/TIMELINE_MIN_AGE="1800"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_HOURLY="10"/TIMELINE_LIMIT_HOURLY="10"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_DAILY="10"/TIMELINE_LIMIT_DAILY="5"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_WEEKLY="0"/TIMELINE_LIMIT_WEEKLY="3"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_MONTHLY="10"/TIMELINE_LIMIT_MONTHLY="2"/' /etc/snapper/configs/root
-    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_YEARLY="10"/TIMELINE_LIMIT_YEARLY="2"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_HOURLY="10"/TIMELINE_LIMIT_HOURLY="5"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_DAILY="10"/TIMELINE_LIMIT_DAILY="7"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_WEEKLY="0"/TIMELINE_LIMIT_WEEKLY="0"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_MONTHLY="10"/TIMELINE_LIMIT_MONTHLY="0"/' /etc/snapper/configs/root
+    arch-chroot /mnt sed -i 's/^TIMELINE_LIMIT_YEARLY="10"/TIMELINE_LIMIT_YEARLY="0"/' /etc/snapper/configs/root
 
     # Set up snapshot cleanup
     arch-chroot /mnt sed -i 's/^NUMBER_LIMIT="50"/NUMBER_LIMIT="10"/' /etc/snapper/configs/root
@@ -521,11 +521,11 @@ EOF
     arch-chroot /mnt snapper -c root create -d "Initial snapshot"
 
     print_color "32" "Snapper setup complete with Arch Wiki recommended configuration:"
-    print_color "33" "- 10 hourly snapshots"
-    print_color "33" "- 5 daily snapshots"
-    print_color "33" "- 3 weekly snapshots"
-    print_color "33" "- 2 monthly snapshots"
-    print_color "33" "- 2 yearly snapshots"
+    print_color "33" "- 5 hourly snapshots"
+    print_color "33" "- 7 daily snapshots"
+    print_color "33" "- 0 weekly snapshots"
+    print_color "33" "- 0 monthly snapshots"
+    print_color "33" "- 0 yearly snapshots"
     print_color "33" "- Maximum of 10 snapshots for number cleanup"
     print_color "33" "- Automatic snapshots before package operations"
     print_color "33" "- Boot backup before kernel updates"
