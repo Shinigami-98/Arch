@@ -20,6 +20,7 @@ error_handler() {
     exit 1
 }
 
+sudo chmod 777 /etc/pacman.conf
 read -p "Do you want to set up zram for swap? (y/n): " setup_zram
 if [[ $setup_zram =~ ^[Yy]$ ]]; then
     while true; do
@@ -31,13 +32,8 @@ if [[ $setup_zram =~ ^[Yy]$ ]]; then
         fi
     done
 fi
-
 read -p "Do you want to set up Snapper for system snapshots? (y/n): " setup_snapper
-
-
-if [[ $setup_snapper =~ ^[Nn]$ ]]; then
-   read -p "Do you want to install yay AUR helper? (y/n): " install_yay
-fi
+read -p "Do you want to install yay AUR helper? (y/n): " install_yay
 
 if [[ $install_yay =~ ^[Yy]$ ]]; then
     print_color "32" "Installing yay AUR helper..."
