@@ -137,7 +137,22 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
     if [[ ! -d "/etc/pacman.d/hooks" ]]; then
         mkdir -p /etc/pacman.d/hooks
     fi
-    
+
+    # Add hook for updating GRUB after Snapper snapshots
+    cat > /etc/pacman.d/hooks/90-snapper-grub-update.hook << 'EOF'
+[Trigger]
+Operation = Post
+Type = Path
+Target = var/lib/snapper/snapshots/*/info.xml
+
+[Action]
+Description = Updating GRUB after Snapper snapshot...
+When = PostTransaction
+Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
+Depends = grub
+EOF
+
+    # Original hooks remain unchanged
     cat > /etc/pacman.d/hooks/50-bootbackup.hook << 'EOF'
 [Trigger]
 Operation = Upgrade
@@ -172,8 +187,11 @@ EOF
     sudo systemctl enable --now snapper-timeline.timer
     sudo systemctl enable --now snapper-cleanup.timer
 
-    # Create grub-btrfs config directory and enable its service
-    sudo systemctl enable grub-btrfs
+    # Create grub-btrfs config directory and enable its services
+    sudo systemctl enable --now grub-btrfsd
+    
+    # Update GRUB configuration
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
 
     # Create the first snapshot
     sudo snapper -c root create -d "Initial snapshot"
