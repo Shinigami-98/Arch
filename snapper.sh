@@ -114,7 +114,7 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
     sudo mount -a
 
     # Set correct permissions for snapshots directory
-    chmod 750 /.snapshots
+    chmod 755 /.snapshots
 
     # Modify default snapper configuration according to Arch Wiki
     sed -i 's/TIMELINE_MIN_AGE="[0-9]*"/TIMELINE_MIN_AGE="1800"/' /etc/snapper/configs/root
@@ -168,8 +168,6 @@ When = PreTransaction
 Exec = /usr/bin/snapper --no-dbus create -d "pacman transaction"
 EOF
 
-    yay -S --noconfirm snapper-gui
-    
     # Enable and start snapper timeline and cleanup services
     sudo systemctl enable --now snapper-timeline.timer
     sudo systemctl enable --now snapper-cleanup.timer
