@@ -173,7 +173,6 @@ EOF
     sudo systemctl enable --now snapper-cleanup.timer
 
     # Create grub-btrfs config directory and enable its service
-    sudo mkdir -p /etc/grub.d/41_snapshots-btrfs
     sudo systemctl enable grub-btrfs
 
     # Create the first snapshot
