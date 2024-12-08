@@ -121,15 +121,17 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
     # Create hooks
     cat > /etc/pacman.d/hooks/90-snapper-grub-update.hook << 'EOF'
 [Trigger]
-Operation = Post
-Type = Path
-Target = var/lib/snapper/snapshots/*/info.xml
+Operation = Upgrade
+Operation = Install
+Operation = Remove
+Type = Package
+Target = *
 
 [Action]
-Description = Updating GRUB after Snapper snapshot...
-When = PostTransaction
-Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
+Description = Generating GRUB config to let grub-btrfs detect new snapshots...
 Depends = grub
+When = PostTransaction
+Exec = /usr/share/libalpm/scripts/grub-mkconfig
 EOF
 
     cat > /etc/pacman.d/hooks/50-bootbackup.hook << 'EOF'
