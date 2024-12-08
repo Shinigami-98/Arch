@@ -34,6 +34,35 @@ fi
 
 read -p "Do you want to set up Snapper for system snapshots? (y/n): " setup_snapper
 
+
+if [[ $setup_snapper =~ ^[Nn]$ ]]; then
+   read -p "Do you want to install yay AUR helper? (y/n): " install_yay
+fi
+
+if [[ $install_yay =~ ^[Yy]$ ]]; then
+    print_color "32" "Installing yay AUR helper..."
+    
+    # Install base-devel if not already installed
+    sudo pacman -S --needed --noconfirm base-devel git
+    
+    # Create temporary directory for yay installation
+    temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+    
+    # Clone and build yay
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    makepkg -si --noconfirm
+    
+    # Clean up
+    cd /
+    rm -rf "$temp_dir"
+    
+    print_color "32" "yay has been successfully installed!"
+else
+    print_color "33" "Skipping yay installation."
+fi
+
 if [[ $setup_zram =~ ^[Yy]$ ]]; then
     print_color "32" "Setting up zram for swap..."
     print_color "33" "Debug: Testing environment..."
@@ -70,20 +99,29 @@ fi
 
 # Move the snapper setup implementation here (after zram setup)
 if [[ $setup_snapper =~ ^[Yy]$ ]]; then
+    read -p "Enter username for snapper access: " SNAPPER_USER
+
     print_color "32" "Setting up Snapper for BTRFS snapshots..."
 
     # Install necessary packages including GUI tools
-    pacman -S --noconfirm snapper snap-pac grub-btrfs
+    pacman -S --noconfirm snapper grub-btrfs
+
+    sudo umount /.snapshots
+    sudo rm -r /.snapshots
 
     # Create snapper config for root
-    snapper -c root create-config /
+    sudo snapper -c root create-config /
+
+    sudo btrfs su del /.snapshots
+    sudo mkdir /.snapshots
+
+    sudo mount -a
 
     # Set correct permissions for snapshots directory
     chmod 750 /.snapshots
-    chown :wheel /.snapshots
 
     # Modify default snapper configuration according to Arch Wiki
-    sed -i 's/^TIMELINE_MIN_AGE="1800"/TIMELINE_MIN_AGE="1800"/' /etc/snapper/configs/root
+    sed -i 's/TIMELINE_MIN_AGE="[0-9]*"/TIMELINE_MIN_AGE="1800"/' /etc/snapper/configs/root
     sed -i 's/^TIMELINE_LIMIT_HOURLY="10"/TIMELINE_LIMIT_HOURLY="5"/' /etc/snapper/configs/root
     sed -i 's/^TIMELINE_LIMIT_DAILY="10"/TIMELINE_LIMIT_DAILY="7"/' /etc/snapper/configs/root
     sed -i 's/^TIMELINE_LIMIT_WEEKLY="0"/TIMELINE_LIMIT_WEEKLY="0"/' /etc/snapper/configs/root
@@ -92,14 +130,18 @@ if [[ $setup_snapper =~ ^[Yy]$ ]]; then
 
     # Set up snapshot cleanup
     sed -i 's/^NUMBER_LIMIT="50"/NUMBER_LIMIT="10"/' /etc/snapper/configs/root
-    sed -i 's/^NUMBER_MIN_AGE="1800"/NUMBER_MIN_AGE="1800"/' /etc/snapper/configs/root
+    sed -i 's/^NUMBER_MIN_AGE="[0-9]*"/NUMBER_MIN_AGE="1800"/' /etc/snapper/configs/root
 
     # Set ALLOW_USERS and ALLOW_GROUPS in snapper config
-    sed -i 's/^ALLOW_USERS=""/ALLOW_USERS="'"$NEW_USER"'"/' /etc/snapper/configs/root
+    read -p "Enter username for snapper access: " SNAPPER_USER
+    sed -i 's/^ALLOW_USERS=""/ALLOW_USERS="'"$SNAPPER_USER"'"/' /etc/snapper/configs/root
     sed -i 's/^ALLOW_GROUPS=""/ALLOW_GROUPS="wheel"/' /etc/snapper/configs/root
 
     # Configure pacman hooks for automatic snapshots
-    mkdir -p /etc/pacman.d/hooks
+    if [[ ! -d "/etc/pacman.d/hooks" ]]; then
+        mkdir -p /etc/pacman.d/hooks
+    fi
+    
     cat > /etc/pacman.d/hooks/50-bootbackup.hook << 'EOF'
 [Trigger]
 Operation = Upgrade
@@ -130,16 +172,18 @@ When = PreTransaction
 Exec = /usr/bin/snapper --no-dbus create -d "pacman transaction"
 EOF
 
+    yay -S --noconfirm snapper-gui
+    
     # Enable and start snapper timeline and cleanup services
-    systemctl enable --now snapper-timeline.timer
-    systemctl enable --now snapper-cleanup.timer
+    sudo systemctl enable --now snapper-timeline.timer
+    sudo systemctl enable --now snapper-cleanup.timer
 
     # Create grub-btrfs config directory and enable its service
-    mkdir -p /etc/grub.d/41_snapshots-btrfs
-    systemctl enable grub-btrfsd
+    sudo mkdir -p /etc/grub.d/41_snapshots-btrfs
+    sudo systemctl enable grub-btrfs
 
     # Create the first snapshot
-    snapper -c root create -d "Initial snapshot"
+    sudo snapper -c root create -d "Initial snapshot"
 
     print_color "32" "Snapper setup complete with Arch Wiki recommended configuration:"
     print_color "33" "- 5 hourly snapshots"
