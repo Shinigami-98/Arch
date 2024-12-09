@@ -84,7 +84,9 @@ create_snapper_hooks() {
     # Create GRUB update hook
     cat > /etc/pacman.d/hooks/95-snapper-grub-update.hook << 'EOF'
 [Trigger]
-Operation = Post
+Operation = Install
+Operation = Upgrade
+Operation = Remove
 Type = Path
 Target = var/lib/snapper/snapshots/*/info.xml
 
@@ -124,7 +126,22 @@ Target = *
 Description = Creating Snapper snapshot...
 Depends = snapper
 When = PreTransaction
-Exec = /usr/bin/snapper --no-dbus create -d "pacman transaction"
+Exec = /usr/bin/snapper --no-dbus create -d "pacman: $(cat /tmp/pacman-cmd)"
+EOF
+
+    # Create a pre-transaction hook to save the pacman command
+    cat > /etc/pacman.d/hooks/79-save-pacman-cmd.hook << 'EOF'
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = Package
+Target = *
+
+[Action]
+Description = Saving pacman command...
+When = PreTransaction
+Exec = /bin/sh -c 'echo "$@" > /tmp/pacman-cmd' -- $0 $@
 EOF
 }
 
