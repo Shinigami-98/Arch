@@ -128,6 +128,7 @@ Depends = snapper
 When = PreTransaction
 Exec = /usr/bin/snapper --no-dbus create -d "pacman: $(/usr/bin/ps -C pacman -o args=)"
 EOF
+}
 
 setup_snapper() {
     local SNAPPER_USER=$1
@@ -224,5 +225,6 @@ main() {
 
     sync
 }
+
 # Execute main function
 main
