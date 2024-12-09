@@ -224,6 +224,5 @@ main() {
 
     sync
 }
-
 # Execute main function
 main
