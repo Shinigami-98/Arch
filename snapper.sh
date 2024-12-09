@@ -34,6 +34,8 @@ check_btrfs() {
     fi
 }
 
+sudo chmod 555 /etc/pacman.conf
+
 # Installation Functions
 install_yay() {
     if [ "$EUID" -eq 0 ]; then
