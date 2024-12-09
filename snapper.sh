@@ -126,24 +126,8 @@ Target = *
 Description = Creating Snapper snapshot...
 Depends = snapper
 When = PreTransaction
-Exec = /usr/bin/snapper --no-dbus create -d "pacman: $(cat /tmp/pacman-cmd)"
+Exec = /usr/bin/snapper --no-dbus create -d "pacman: $(/usr/bin/ps -C pacman -o args=)"
 EOF
-
-    # Create a pre-transaction hook to save the pacman command
-    cat > /etc/pacman.d/hooks/79-save-pacman-cmd.hook << 'EOF'
-[Trigger]
-Operation = Install
-Operation = Upgrade
-Operation = Remove
-Type = Package
-Target = *
-
-[Action]
-Description = Saving pacman command...
-When = PreTransaction
-Exec = /bin/sh -c 'echo "$@" > /tmp/pacman-cmd' -- $0 $@
-EOF
-}
 
 setup_snapper() {
     local SNAPPER_USER=$1
