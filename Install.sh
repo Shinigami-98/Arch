@@ -395,7 +395,7 @@ if [[ $install_sddm =~ ^[Yy]$ ]]; then
 
         # Install Flatpak and KDE Control Modules
         print_color "32" "Installing Flatpak and additional KDE Control Modules..."
-        arch-chroot /mnt pacman -S --noconfirm fastfetch discover dolphin ark bluez firewalld flatpak kde-gtk-config breeze-gtk kdeconnect kdeplasma-addons bluedevil kgamma kscreen plasma-firewall plasma-browser-integration plasma-nm plasma-pa plasma-sdk plasma-systemmonitor power-profiles-daemon
+        arch-chroot /mnt pacman -S --noconfirm fastfetch discover dolphin ark bluez firewalld flatpak kde-gtk-config breeze-gtk kdeconnect kdeplasma-addons bluedevil kgamma kscreen plasma-firewall plasma-browser-integration plasma-nm plasma-pa plasma-sdk plasma-systemmonitor power-profiles-daemon kwallet-pam
 
         # Install common fonts
         print_color "32" "Installing common fonts..."
