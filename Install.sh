@@ -32,6 +32,17 @@ install_packages() {
     print_color "32" "Successfully installed packages: ${packages[*]}"
 }
 
+# Function to safely install base packages using pacstrap
+install_base_packages() {
+    local packages=("$@")
+    print_color "33" "Installing base packages using pacstrap: ${packages[*]}"
+    if ! pacstrap /mnt "${packages[@]}"; then
+        print_color "31" "Failed to install base packages: ${packages[*]}"
+        exit 1
+    fi
+    print_color "32" "Successfully installed base packages: ${packages[*]}"
+}
+
 # Function to safely install packages outside chroot
 install_packages_host() {
     local packages=("$@")
@@ -278,7 +289,7 @@ mount --mkdir $EFI_PARTITION /mnt/boot/efi
 
 print_color "33" "Installing base system..."
 BASE_PACKAGES=(base base-devel "$KERNEL" "$KERNEL_HEADERS" linux-firmware sof-firmware networkmanager grub efibootmgr os-prober micro git wget bluez pipewire)
-install_packages "${BASE_PACKAGES[@]}"
+install_base_packages "${BASE_PACKAGES[@]}"
 
 print_color "33" "Generating fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab
