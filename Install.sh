@@ -21,6 +21,28 @@ error_handler() {
     exit 1
 }
 
+# Function to safely install packages
+install_packages() {
+    local packages=("$@")
+    print_color "33" "Installing packages: ${packages[*]}"
+    if ! arch-chroot /mnt pacman -S --noconfirm --needed "${packages[@]}"; then
+        print_color "31" "Failed to install packages: ${packages[*]}"
+        exit 1
+    fi
+    print_color "32" "Successfully installed packages: ${packages[*]}"
+}
+
+# Function to safely install packages outside chroot
+install_packages_host() {
+    local packages=("$@")
+    print_color "33" "Installing packages: ${packages[*]}"
+    if ! pacman -S --noconfirm --needed "${packages[@]}"; then
+        print_color "31" "Failed to install packages: ${packages[*]}"
+        exit 1
+    fi
+    print_color "32" "Successfully installed packages: ${packages[*]}"
+}
+
 # Function to show partitions and ask for partition type
 show_partitions_and_ask() {
     echo "Current disk layout:"
@@ -174,7 +196,7 @@ configure_pacman() {
 configure_pacman
 sync
 
-pacman -S --noconfirm rsync
+install_packages_host rsync
 
 cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
 
@@ -187,7 +209,7 @@ else
 fi
 
 print_color "33" "Installing necessary packages..."
-pacman -S --noconfirm --needed gptfdisk btrfs-progs glibc
+install_packages_host gptfdisk btrfs-progs glibc
 
 umount -R /mnt 2>/dev/null || true
 
@@ -255,7 +277,8 @@ swapon $SWAP_PARTITION
 mount --mkdir $EFI_PARTITION /mnt/boot/efi
 
 print_color "33" "Installing base system..."
-pacstrap -K -P /mnt base base-devel $KERNEL $KERNEL_HEADERS linux-firmware sof-firmware networkmanager grub efibootmgr os-prober micro git wget bluez pipewire
+BASE_PACKAGES=(base base-devel "$KERNEL" "$KERNEL_HEADERS" linux-firmware sof-firmware networkmanager grub efibootmgr os-prober micro git wget bluez pipewire)
+install_packages "${BASE_PACKAGES[@]}"
 
 print_color "33" "Generating fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -299,10 +322,10 @@ install_grub() {
         mkdir -p /mnt/boot/efi
         mount $EFI_PARTITION /mnt/boot/efi
     fi
-    arch-chroot /mnt pacman -S --noconfirm efibootmgr
+    install_packages efibootmgr
     arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$LABEL"
 
-    arch-chroot /mnt pacman -S --noconfirm --needed os-prober
+    install_packages os-prober
     echo "Enabling os-prober in GRUB configuration..."
     arch-chroot /mnt sed -i 's/#GRUB_DISABLE_OS_PROBER=false/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
     echo "Generating GRUB configuration..."
@@ -313,7 +336,10 @@ install_grub() {
 install_grub
 
 # Update package database
-arch-chroot /mnt pacman -Syy --noconfirm --needed
+if ! arch-chroot /mnt pacman -Syy --noconfirm --needed; then
+    print_color "31" "Failed to update package database"
+    exit 1
+fi
 
 # Backup and modify mkinitcpio.conf
 print_color "33" "Backing up $MKINITCPIO_CONF to $MKINITCPIO_CONF.bak"
@@ -330,7 +356,8 @@ arch-chroot /mnt sed -i 's/ fsck//' "$MKINITCPIO_CONF"
 
 if [[ $has_nvidia =~ ^[Yy]$ ]]; then
     print_color "32" "Installing NVIDIA drivers and configuring the system..."
-    arch-chroot /mnt pacman -S --noconfirm --needed nvidia-dkms libglvnd opencl-nvidia nvidia-utils lib32-libglvnd lib32-opencl-nvidia lib32-nvidia-utils nvidia-settings
+    NVIDIA_PACKAGES=(nvidia-dkms libglvnd opencl-nvidia nvidia-utils lib32-libglvnd lib32-opencl-nvidia lib32-nvidia-utils nvidia-settings)
+    install_packages "${NVIDIA_PACKAGES[@]}"
     NVIDIA_MODULES=("nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_drm")
 
     # Modify mkinitcpio.conf to add NVIDIA modules after existing modules
@@ -363,28 +390,30 @@ fi
 
 if [[ $install_sddm =~ ^[Yy]$ ]]; then
     print_color "32" "Installing SDDM..."
-    arch-chroot /mnt pacman -S --noconfirm sddm
+    install_packages sddm
     print_color "32" "Enabling SDDM service..."
     arch-chroot /mnt systemctl enable sddm
 
     if [[ $install_xorg =~ ^[Yy]$ ]]; then
         print_color "32" "Installing minimal Xorg for KDE..."
-        arch-chroot /mnt pacman -S --noconfirm xorg-server xorg-xinit xorg-xrandr xorg-xsetroot
+        XORG_PACKAGES=(xorg-server xorg-xinit xorg-xrandr xorg-xsetroot)
+        install_packages "${XORG_PACKAGES[@]}"
     else
         print_color "33" "Skipping Xorg installation."
     fi
 
     if [[ $install_plasma =~ ^[Yy]$ ]]; then
         print_color "32" "Installing Plasma..."
-        arch-chroot /mnt pacman -S --noconfirm plasma-desktop sddm-kcm plymouth-kcm
+        PLASMA_PACKAGES=(plasma-desktop sddm-kcm plymouth-kcm)
+        install_packages "${PLASMA_PACKAGES[@]}"
 
-        # Install KDE Control Modules
         print_color "32" "Installing KDE Control Modules..."
-        arch-chroot /mnt pacman -S --noconfirm fastfetch discover dolphin ark bluez firewalld kde-gtk-config breeze-gtk kdeconnect kdeplasma-addons bluedevil kgamma kscreen plasma-firewall plasma-browser-integration plasma-nm plasma-pa plasma-sdk plasma-systemmonitor power-profiles-daemon kwallet-pam
+        KDE_PACKAGES=(fastfetch discover dolphin ark bluez firewalld kde-gtk-config breeze-gtk kdeconnect kdeplasma-addons bluedevil kgamma kscreen plasma-firewall plasma-browser-integration plasma-nm plasma-pa plasma-sdk plasma-systemmonitor power-profiles-daemon kwallet-pam)
+        install_packages "${KDE_PACKAGES[@]}"
 
-        # Install common fonts
         print_color "32" "Installing common fonts..."
-        arch-chroot /mnt pacman -S --noconfirm ttf-liberation ttf-dejavu noto-fonts noto-fonts-emoji noto-fonts-cjk ttf-roboto ttf-roboto-mono ttf-droid ttf-opensans ttf-hack ttf-fira-code ttf-fira-mono ttf-cascadia-code adobe-source-code-pro-fonts adobe-source-sans-fonts adobe-source-serif-fonts
+        FONT_PACKAGES=(ttf-liberation ttf-dejavu noto-fonts noto-fonts-emoji noto-fonts-cjk ttf-roboto ttf-roboto-mono ttf-droid ttf-opensans ttf-hack ttf-fira-code ttf-fira-mono ttf-cascadia-code adobe-source-code-pro-fonts adobe-source-sans-fonts adobe-source-serif-fonts)
+        install_packages "${FONT_PACKAGES[@]}"
     else
         print_color "33" "Skipping Plasma installation."
     fi
