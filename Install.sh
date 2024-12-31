@@ -36,7 +36,7 @@ install_packages() {
 install_base_packages() {
     local packages=("$@")
     print_color "33" "Installing base packages using pacstrap: ${packages[*]}"
-    if ! pacstrap /mnt "${packages[@]}"; then
+    if ! pacstrap -K -P /mnt "${packages[@]}"; then
         print_color "31" "Failed to install base packages: ${packages[*]}"
         exit 1
     fi
