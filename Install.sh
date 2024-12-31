@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-COUNTRY="Singapore"
+COUNTRY="Germany"
 LABEL="Legion -- X"
 MKINITCPIO_CONF="/etc/mkinitcpio.conf"
 GRUB_CONF="/etc/default/grub"
