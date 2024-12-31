@@ -213,7 +213,7 @@ cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
 
 if [[ $sync_mirrors =~ ^[Yy]$ ]]; then
     print_color "33" "Updating mirror list..."
-    reflector -a 6 -c "$COUNTRY" --sort rate --save /etc/pacman.d/mirrorlist
+    reflector -a 6 -c "$COUNTRY" -p https --sort rate --save /etc/pacman.d/mirrorlist
     print_color "32" "Mirror list updated successfully."
 else
     print_color "33" "Skipping mirror sync."
